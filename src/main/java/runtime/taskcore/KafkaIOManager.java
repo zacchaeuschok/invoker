@@ -5,6 +5,7 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.TaskMigratedException;
+import runtime.taskcore.api.IOManager;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -13,12 +14,12 @@ import java.util.Properties;
 
 import static org.apache.kafka.streams.processor.internals.ClientUtils.getConsumerClientId;
 
-public class IOManager {
+public class KafkaIOManager implements IOManager {
 
     private final Consumer<byte[], byte[]> mainConsumer;
     public static final String TOPIC = "test";
 
-    public IOManager() {
+    public KafkaIOManager() {
         final Properties props = new Properties();
         props.putIfAbsent(StreamsConfig.APPLICATION_ID_CONFIG, "streams-wordcount");
         props.putIfAbsent(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
@@ -48,7 +49,8 @@ public class IOManager {
      * @return Next batch of records or null if no records available.
      * @throws TaskMigratedException if the task producer got fenced (EOS only)
      */
-    ConsumerRecords<byte[], byte[]> pollRequests(final Duration pollTime) {
+    @Override
+    public ConsumerRecords<byte[], byte[]> pollRequests(final Duration pollTime) {
         ConsumerRecords<byte[], byte[]> records = ConsumerRecords.empty();
         try {
             records = mainConsumer.poll(pollTime);

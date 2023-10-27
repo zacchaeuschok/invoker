@@ -7,22 +7,23 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 
 public class TaskCore extends Thread {
+//public class TaskCore implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(TaskCore.class);
 
     private final TaskExecutor taskExecutor;
 
-    private final IOManager ioManager;
+    private final KafkaIOManager kafkaIoManager;
 
 
     public TaskCore() {
         this.taskExecutor = new TaskExecutor();
-        this.ioManager = new IOManager();
+        this.kafkaIoManager = new KafkaIOManager();
     }
 
     @Override
     public void run() {
         log.info("Starting");
-        ioManager.subscribeConsumer();
+        kafkaIoManager.subscribeConsumer();
 
         while(isRunning()) {
             runOnce();
@@ -40,7 +41,7 @@ public class TaskCore extends Thread {
         final ConsumerRecords<byte[], byte[]> records;
         log.debug("Invoking poll on main Consumer");
 
-        records = ioManager.pollRequests(Duration.ZERO);
+        records = kafkaIoManager.pollRequests(Duration.ZERO);
 
         final int numRecords = records.count();
 
@@ -59,6 +60,8 @@ public class TaskCore extends Thread {
     }
 
     public static void main(String[] args) {
-     // TODO: add lightweight test cases
+        TaskCore taskCore = new TaskCore();
+        Thread t1 =new Thread(taskCore);
+        t1.start();
     }
 }

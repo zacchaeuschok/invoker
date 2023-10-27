@@ -1,21 +1,11 @@
 package runtime.taskcore;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.utils.Time;
-import org.apache.kafka.streams.processor.api.Record;
-import org.apache.kafka.streams.processor.internals.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import runtime.taskcore.api.SimpleStateManager;
 
 import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-import static java.util.Collections.singleton;
-import static org.apache.kafka.streams.processor.internals.metrics.StreamsMetricsImpl.maybeMeasureLatency;
 
 public class TaskExecutor {
     private final Logger log = LoggerFactory.getLogger(TaskExecutor.class);
@@ -28,7 +18,7 @@ public class TaskExecutor {
     private ConsumerRecord<byte[], byte[]> record;
 
     public TaskExecutor() {
-        this.stateManager = new StateManager();
+        this.stateManager = new SimpleStateManager();
         this.fifoQueue = new ArrayDeque<>();
         this.numIterations = 1;
     }
@@ -48,8 +38,8 @@ public class TaskExecutor {
 
     private void doProcess() {
         // TODO: define UDF to process the record
-        // stateManager.read state
-        // stateManager.write state
+        stateManager.read();
+        stateManager.write();
         System.out.println(record);
     }
 

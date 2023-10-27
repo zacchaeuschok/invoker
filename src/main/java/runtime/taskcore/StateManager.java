@@ -1,4 +1,7 @@
 package runtime.taskcore;
 
-public class StateManager {
+public interface StateManager {
+    void write();
+
+    void read();
 }
