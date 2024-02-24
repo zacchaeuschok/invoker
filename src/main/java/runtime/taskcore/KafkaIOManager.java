@@ -17,29 +17,27 @@ import static org.apache.kafka.streams.processor.internals.ClientUtils.getConsum
 public class KafkaIOManager implements IOManager {
 
     private final Consumer<byte[], byte[]> mainConsumer;
-    public static final String TOPIC = "test";
+    private String topic = "test";
 
     public KafkaIOManager() {
         final Properties props = new Properties();
-        props.putIfAbsent(StreamsConfig.APPLICATION_ID_CONFIG, "streams-wordcount");
-        props.putIfAbsent(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        props.putIfAbsent(StreamsConfig.STATESTORE_CACHE_MAX_BYTES_CONFIG, 0);
-        props.putIfAbsent(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-        props.putIfAbsent(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        String kafkaBroker = System.getenv("KAFKA_BROKER");
+        String kafkaTopic = System.getenv("INPUT_TOPIC");
+        if (kafkaBroker == null || kafkaBroker.isEmpty()) {
+            kafkaBroker = "host.docker.internal:9092";
+        }
+        if (kafkaTopic != null && !kafkaTopic.isEmpty()) {
+            topic = kafkaTopic;
+        }
+        System.out.println(kafkaBroker);
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBroker);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "group");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-        // setting offset reset to earliest so that we can re-run the demo code with the same pre-loaded data
-        // Note: To re-run the demo, you need to use the offset reset tool:
-        // https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Streams+Application+Reset+Tool
-        props.putIfAbsent(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-        StreamsConfig config = new StreamsConfig(props);
-        final String applicationId = config.getString(StreamsConfig.APPLICATION_ID_CONFIG);
-        final Long threadId = Thread.currentThread().getId();
-        final int threadIdx = threadId.intValue();
-        final String clientId = "Task-" + threadIdx;
-        final Map<String, Object> consumerConfigs = config.getMainConsumerConfigs(applicationId, getConsumerClientId(clientId), threadIdx);
-
-        this.mainConsumer = new KafkaConsumer<>(consumerConfigs, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+        this.mainConsumer = new KafkaConsumer<>(props);
     }
 
     /**
@@ -62,6 +60,6 @@ public class KafkaIOManager implements IOManager {
     }
 
     void subscribeConsumer() {
-        mainConsumer.subscribe(Collections.singletonList(TOPIC));
+        mainConsumer.subscribe(Collections.singletonList(topic));
     }
 }

@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import runtime.taskcore.api.SimpleStateManager;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 
 public class TaskExecutor {
@@ -40,7 +41,10 @@ public class TaskExecutor {
         // TODO: define UDF to process the record
         stateManager.read();
         stateManager.write();
-        System.out.println(record);
+        if (record != null) {
+            String valueAsString = new String(record.value(), StandardCharsets.UTF_8);
+            System.out.println(valueAsString);
+        }
     }
 
 
