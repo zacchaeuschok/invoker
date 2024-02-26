@@ -7,6 +7,11 @@
     <groupId>org.example</groupId>
     <artifactId>invoker</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <modules>
+        <module>executor</module>
+        <module>iosidecar</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
