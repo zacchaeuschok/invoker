@@ -8,9 +8,7 @@ import org.apache.kafka.streams.errors.TaskMigratedException;
 import runtime.taskcore.api.IOManager;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import static org.apache.kafka.streams.processor.internals.ClientUtils.getConsumerClientId;
 
@@ -48,7 +46,7 @@ public class KafkaIOManager implements IOManager {
      * @throws TaskMigratedException if the task producer got fenced (EOS only)
      */
     @Override
-    public ConsumerRecords<byte[], byte[]> pollRequests(final Duration pollTime) {
+    public List<KeyValuePair> pollRequests(final Duration pollTime) {
         ConsumerRecords<byte[], byte[]> records = ConsumerRecords.empty();
         try {
             records = mainConsumer.poll(pollTime);
@@ -56,7 +54,7 @@ public class KafkaIOManager implements IOManager {
             throw new RuntimeException(e);
         }
 
-        return records;
+        return new ArrayList<>();
     }
 
     void subscribeConsumer() {

@@ -3,15 +3,17 @@ package runtime;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 public class SocketServer {
     private ServerSocket serverSocket;
     private Socket clientSocket;
-    private PrintWriter out;
+    private OutputStream out;
 
     public void start(int port) {
         try {
@@ -20,23 +22,38 @@ public class SocketServer {
             clientSocket = serverSocket.accept(); // Accepts connection from the main container
             System.out.println("Socket client accepted.");
 
-            out = new PrintWriter(clientSocket.getOutputStream(), true);
+            out = clientSocket.getOutputStream();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public void sendRecords(final Iterable<ConsumerRecord<byte[], byte[]>> records) {
-        for (final ConsumerRecord<byte[], byte[]> record : records) {
-            String valueAsString = new String(record.value(), StandardCharsets.UTF_8);
-            sendMessage(valueAsString);
-        };
-    }
-
-    public void sendMessage(String message) {
-        if (out != null) {
-            out.println(message);
+        try {
+            for (ConsumerRecord<byte[], byte[]> record : records) {
+                byte[] key = record.key();
+                if (key != null) {
+                    out.write(intToBytes(key.length)); // Send the length of the value
+                    out.write(key); // Send the value itself
+                }
+                System.out.println("sent key");
+                byte[] value = record.value();
+                if (value != null) {
+                    out.write(intToBytes(value.length)); // Send the length of the value
+                    out.write(value); // Send the value itself
+                }
+                // Flush to ensure the data is sent over the network
+                out.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+    }
+    private byte[] intToBytes(int i) {
+        ByteBuffer bb = ByteBuffer.allocate(4);
+        bb.putInt(i);
+        return bb.array();
     }
 
     public void stop() {

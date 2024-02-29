@@ -11,12 +11,12 @@ import java.util.ArrayDeque;
 public class TaskExecutor {
     private final Logger log = LoggerFactory.getLogger(TaskExecutor.class);
 
-    private final ArrayDeque<ConsumerRecord<byte[], byte[]>> fifoQueue;
+    private final ArrayDeque<KeyValuePair> fifoQueue;
 
     private final StateManager stateManager;
     private final int numIterations;
 
-    private ConsumerRecord<byte[], byte[]> record;
+    private KeyValuePair record;
 
     public TaskExecutor() {
         this.stateManager = new SimpleStateManager();
@@ -42,8 +42,7 @@ public class TaskExecutor {
         stateManager.read();
         stateManager.write();
         if (record != null) {
-            String valueAsString = new String(record.value(), StandardCharsets.UTF_8);
-            System.out.println(valueAsString);
+            System.out.println(record.value);
         }
     }
 
@@ -54,12 +53,12 @@ public class TaskExecutor {
      *
      * @param records   the records
      */
-    public void addRecords(final Iterable<ConsumerRecord<byte[], byte[]>> records) {
+    public void addRecords(final Iterable<KeyValuePair> records) {
         addRawRecords(records);
     }
 
-    private void addRawRecords(final Iterable<ConsumerRecord<byte[], byte[]>> rawRecords) {
-        for (final ConsumerRecord<byte[], byte[]> rawRecord : rawRecords) {
+    private void addRawRecords(final Iterable<KeyValuePair> rawRecords) {
+        for (final KeyValuePair rawRecord : rawRecords) {
             fifoQueue.addLast(rawRecord);
         }
     }

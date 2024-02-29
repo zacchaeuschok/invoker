@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.List;
 
 public class TaskCore extends Thread {
 //public class TaskCore implements Runnable {
@@ -12,18 +13,17 @@ public class TaskCore extends Thread {
 
     private final TaskExecutor taskExecutor;
 
-    private final KafkaIOManager kafkaIoManager;
+    private final SocketIOManager socketIOManager;
 
 
     public TaskCore() {
         this.taskExecutor = new TaskExecutor();
-        this.kafkaIoManager = new KafkaIOManager();
+        this.socketIOManager = new SocketIOManager();
     }
 
     @Override
     public void run() {
         log.info("Starting");
-        kafkaIoManager.subscribeConsumer();
 
         while(isRunning()) {
             runOnce();
@@ -38,15 +38,14 @@ public class TaskCore extends Thread {
     }
 
     private void pollPhase() {
-        final ConsumerRecords<byte[], byte[]> records;
         log.debug("Invoking poll on main Consumer");
 
-        records = kafkaIoManager.pollRequests(Duration.ZERO);
+        List<KeyValuePair> records = socketIOManager.pollRequests(Duration.ZERO);
 
-        final int numRecords = records.count();
+        final int numRecords = records.size();
 
-        log.debug("Main Consumer poll completed and fetched {} records from partitions {}",
-                numRecords, records.partitions());
+        log.debug("Main Consumer poll completed and fetched {} records",
+                numRecords);
 
         if (!records.isEmpty()) {
             taskExecutor.addRecords(records);
