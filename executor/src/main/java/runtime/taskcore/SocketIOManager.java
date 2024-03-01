@@ -43,6 +43,7 @@ public class SocketIOManager implements IOManager {
             try {
                 byte[] lengthBytes = new byte[4]; // length of the message is provided in the first 4 bytes
                 while (!Thread.currentThread().isInterrupted()) {
+                    System.out.println("Looping read");
                     if (in.read(lengthBytes) == -1) {
                         reconnecting = true;
                         // End of stream reached or socket closed

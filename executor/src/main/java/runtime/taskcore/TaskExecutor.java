@@ -29,8 +29,13 @@ public class TaskExecutor {
         int totalProcessed = 0;
 
         while (totalProcessed < numIterations) {
-            record = fifoQueue.pollFirst();
-            doProcess();
+            if (fifoQueue.size() != 0) {
+                System.out.println(fifoQueue.size());
+            }
+            if (!fifoQueue.isEmpty()) {
+                record = fifoQueue.pollFirst();
+                doProcess();
+            }
             totalProcessed++;
         }
 
@@ -39,8 +44,10 @@ public class TaskExecutor {
 
     private void doProcess() {
         // TODO: define UDF to process the record
-        stateManager.read();
-        stateManager.write();
+        String currData = stateManager.read("default");
+        System.out.println("Do process" + record.value);
+        String newData = currData + record.value;
+        stateManager.write("default", newData);
         if (record != null) {
             System.out.println(record.value);
         }
@@ -58,6 +65,7 @@ public class TaskExecutor {
     }
 
     private void addRawRecords(final Iterable<KeyValuePair> rawRecords) {
+        System.out.println("Adding raw records");
         for (final KeyValuePair rawRecord : rawRecords) {
             fifoQueue.addLast(rawRecord);
         }

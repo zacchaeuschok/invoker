@@ -1,7 +1,12 @@
 package runtime;
 
 import org.apache.kafka.clients.consumer.*;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.streams.errors.TaskMigratedException;
 
 import java.time.Duration;
@@ -29,8 +34,6 @@ public class KafkaIOManager implements IOManager {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "group");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-
-
         this.mainConsumer = new KafkaConsumer<>(props);
     }
 
@@ -52,6 +55,11 @@ public class KafkaIOManager implements IOManager {
 
         return records;
     }
+
+    public void close() {
+        mainConsumer.close();
+    }
+
 
     public void subscribeConsumer() {
         mainConsumer.subscribe(Collections.singletonList(topic));

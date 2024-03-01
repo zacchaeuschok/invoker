@@ -1,7 +1,7 @@
 package runtime.taskcore;
 
 public interface StateManager {
-    void write();
+    void write(String key, String value);
 
-    void read();
+    String read(String key);
 }

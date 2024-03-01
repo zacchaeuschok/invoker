@@ -32,6 +32,7 @@ public class TaskCore extends Thread {
 
     void runOnce() {
         if (isRunning()) {
+
             pollPhase();
             taskExecutor.process();
         }
@@ -41,7 +42,6 @@ public class TaskCore extends Thread {
         log.debug("Invoking poll on main Consumer");
 
         List<KeyValuePair> records = socketIOManager.pollRequests(Duration.ZERO);
-
         final int numRecords = records.size();
 
         log.debug("Main Consumer poll completed and fetched {} records",
