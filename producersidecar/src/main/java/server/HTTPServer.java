@@ -1,3 +1,4 @@
+package server;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -9,18 +10,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-public class StateServer {
+public class Server {
 
-    private static final HashMap<String, String> storage = new HashMap<>();
+    private static KafkaIOManager ioManager;
+
     public static void main(String[] args) throws IOException {
-        int port = 50000;
+        int port = 5500;
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-        storage.put("default", "");
         System.out.println("Server started at http://localhost:" + port);
 
         server.createContext("/data", new DataHandler());
         server.setExecutor(null); // creates a default executor
         server.start();
+        ioManager = new KafkaIOManager();
+
     }
 
     static class DataHandler implements HttpHandler {
@@ -28,27 +31,13 @@ public class StateServer {
         public void handle(HttpExchange exchange) throws IOException {
             try {
                 Map<String, String> queryParams = queryToMap(exchange.getRequestURI().getQuery());
-                if ("GET".equals(exchange.getRequestMethod())) {
-                    System.out.println("Handling get req");
-                    String response = handleGetRequest(exchange, queryParams);
-                    sendResponse(exchange, 200, response);
-                } else if ("POST".equals(exchange.getRequestMethod())) {
+                if ("POST".equals(exchange.getRequestMethod())) {
                     String response = handlePostRequest(exchange, queryParams);
                     sendResponse(exchange, 200, response);
                 }
-            } catch (NoSuchElementException e) {
-                sendResponse(exchange, 404, "Key not found");
             } catch (Exception e) {
                 sendResponse(exchange, 400, "Bad request");
             }
-        }
-
-        private String handleGetRequest(HttpExchange exchange, Map<String, String> queryParams) throws Exception {
-            String key = queryParams.get("key");
-            if (storage.containsKey(key)) {
-                return storage.get(key);
-            }
-            throw new NoSuchElementException();
         }
 
         private String handlePostRequest(HttpExchange exchange, Map<String, String> queryParams) {
@@ -62,9 +51,8 @@ public class StateServer {
                 while ((b = bufferedReader.read()) != -1) {
                     requestBody.append((char) b);
                 }
+                ioManager.send(queryParams.get("key"), requestBody.toString());
 
-                storage.put(queryParams.get("key"), requestBody.toString());
-                System.out.println("Updated storage to: " + storage.get(queryParams.get("key")));
                 return "POST request processed with data: " + requestBody.toString();
             } catch (IOException e) {
                 // Handle exceptions or errors here
