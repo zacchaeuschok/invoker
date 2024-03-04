@@ -1,5 +1,7 @@
 package runtime;
 
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -18,6 +20,18 @@ public class KafkaIOManager implements IOManager {
     private final Consumer<byte[], byte[]> mainConsumer;
     private String topic = "test";
 
+    public boolean isBrokerAddressValid(String brokerAddress) {
+        Properties props = new Properties();
+        props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, brokerAddress);
+        try (AdminClient adminClient = AdminClient.create(props)) {
+            adminClient.listTopics().names().get();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public KafkaIOManager() {
         final Properties props = new Properties();
         String kafkaBroker = System.getenv("KAFKA_BROKER");
@@ -29,6 +43,9 @@ public class KafkaIOManager implements IOManager {
             topic = kafkaTopic;
         }
         System.out.println(kafkaBroker);
+        if (!isBrokerAddressValid(kafkaBroker)) {
+            System.out.println("Invalid kafka broker address");
+        }
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBroker);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());

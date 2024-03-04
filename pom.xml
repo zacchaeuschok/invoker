@@ -12,6 +12,7 @@
         <module>executor</module>
         <module>iosidecar</module>
         <module>statesidecar</module>
+        <module>producersidecar</module>
     </modules>
 
     <properties>

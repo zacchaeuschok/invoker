@@ -4,5 +4,5 @@ RUN apt-get update && \
     dnsutils \
     iputils-ping
 WORKDIR /
-COPY target/statesidecar-1.0-SNAPSHOT.jar /
-CMD ["java", "-jar","statesidecar-1.0-SNAPSHOT.jar"]
+COPY target/iosidecar-1.0-SNAPSHOT.jar /
+CMD ["java", "-jar","iosidecar-1.0-SNAPSHOT.jar"]

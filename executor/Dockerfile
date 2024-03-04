@@ -4,5 +4,5 @@ RUN apt-get update && \
     dnsutils \
     iputils-ping
 WORKDIR /
-COPY target/invoker-1.0-SNAPSHOT.jar /
-CMD ["java", "-jar","invoker-1.0-SNAPSHOT.jar"]
+COPY target/executor-1.0-SNAPSHOT.jar /
+CMD ["java", "-jar","executor-1.0-SNAPSHOT.jar"]

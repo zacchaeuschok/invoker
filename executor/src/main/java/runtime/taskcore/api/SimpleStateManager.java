@@ -11,7 +11,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class SimpleStateManager implements StateManager {
-    private String urlString = "http://localhost:5500/data";
+    private String urlString = "http://localhost:50000/data";
     private HttpURLConnection connection;
 
     @Override

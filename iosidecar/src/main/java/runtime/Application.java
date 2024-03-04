@@ -25,7 +25,7 @@ public class Application extends Thread {
     public void run() {
         log.info("Starting");
         kafkaIoManager.subscribeConsumer();
-        socket.start(5321);
+        socket.start(50001);
 
         while(isRunning()) {
             runOnce();

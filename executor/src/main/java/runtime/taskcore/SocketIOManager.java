@@ -6,9 +6,10 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.errors.TaskMigratedException;
 import runtime.taskcore.api.IOManager;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.Socket;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.security.Key;
 import java.time.Duration;
@@ -21,12 +22,14 @@ public class SocketIOManager implements IOManager {
     private Socket socket;
 
     private String hostname = "localhost";
-    private int port = 5321;
+    private int port = 50001;
     private InputStream in;
     private String topic = "test";
     private final int maxRetries = 5;
 
     private final long waitTimeInMillis = 10000;
+
+    private String producerURL = "http://localhost:50002/data";
 
     private final Queue<KeyValuePair> messageQueue = new ConcurrentLinkedQueue<>();
     private Thread readerThread;
@@ -127,4 +130,45 @@ public class SocketIOManager implements IOManager {
         ByteBuffer bb = ByteBuffer.wrap(bytes);
         return bb.getInt();
     }
+
+    @Override
+    public void send(KeyValuePair data) {
+        try {
+            URL url = new URL(producerURL + "?key=" + data.key);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            connection.setDoOutput(true); // Enable sending a request body
+
+            // Sending request data
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = data.value.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+
+            int responseCode = connection.getResponseCode();
+            System.out.println("Response Code: " + responseCode);
+
+            try (InputStream stream = connection.getInputStream();
+                 InputStreamReader inputStreamReader = new InputStreamReader(stream);
+                 BufferedReader reader = new BufferedReader(inputStreamReader)) {
+
+                String line;
+                StringBuilder response = new StringBuilder();
+
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+
+                System.out.println(response.toString());
+            }
+
+            connection.disconnect();
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+
 }

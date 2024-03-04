@@ -44,6 +44,8 @@ public class SocketServer {
                     if (key != null) {
                         out.write(intToBytes(key.length)); // Send the length of the value
                         out.write(key); // Send the value itself
+                    } else {
+                        out.write(intToBytes(0));
                     }
                     System.out.println("sent key");
                     byte[] value = record.value();

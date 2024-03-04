@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface IOManager {
     List<KeyValuePair> pollRequests(Duration pollTime);
+
+    void send(KeyValuePair data);
 }

@@ -3,6 +3,7 @@ package runtime.taskcore;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import runtime.taskcore.api.IOManager;
 import runtime.taskcore.api.SimpleStateManager;
 
 import java.nio.charset.StandardCharsets;
@@ -18,10 +19,19 @@ public class TaskExecutor {
 
     private KeyValuePair record;
 
-    public TaskExecutor() {
+    private String stateCache;
+
+    private IOManager ioManager;
+
+    public TaskExecutor(IOManager ioManager) {
         this.stateManager = new SimpleStateManager();
         this.fifoQueue = new ArrayDeque<>();
         this.numIterations = 1;
+        this.ioManager = ioManager;
+    }
+
+    public String getStateCache() {
+        return stateCache;
     }
 
 
@@ -46,11 +56,24 @@ public class TaskExecutor {
         // TODO: define UDF to process the record
         String currData = stateManager.read("default");
         System.out.println("Do process" + record.value);
-        String newData = currData + record.value;
+        int count = 0;
+        if (!currData.isEmpty()) {
+            try {
+                count = Integer.parseInt(currData);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        count += record.value.split(" ").length;
+        String newData = "" + count;
         stateManager.write("default", newData);
+        stateCache = newData;
+
         if (record != null) {
             System.out.println(record.value);
         }
+        this.ioManager.send(new KeyValuePair("default", stateCache));
     }
 
 
@@ -65,7 +88,6 @@ public class TaskExecutor {
     }
 
     private void addRawRecords(final Iterable<KeyValuePair> rawRecords) {
-        System.out.println("Adding raw records");
         for (final KeyValuePair rawRecord : rawRecords) {
             fifoQueue.addLast(rawRecord);
         }

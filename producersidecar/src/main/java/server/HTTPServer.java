@@ -8,14 +8,13 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
-public class Server {
+public class HTTPServer {
 
     private static KafkaIOManager ioManager;
 
     public static void main(String[] args) throws IOException {
-        int port = 5500;
+        int port = 50002;
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         System.out.println("Server started at http://localhost:" + port);
 

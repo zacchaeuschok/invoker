@@ -57,6 +57,11 @@ public class KafkaIOManager implements IOManager {
         return new ArrayList<>();
     }
 
+    @Override
+    public void send(KeyValuePair data) {
+
+    }
+
     void subscribeConsumer() {
         mainConsumer.subscribe(Collections.singletonList(topic));
     }

@@ -3,6 +3,7 @@ package runtime.taskcore;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import runtime.taskcore.api.IOManager;
 
 import java.time.Duration;
 import java.util.List;
@@ -13,12 +14,12 @@ public class TaskCore extends Thread {
 
     private final TaskExecutor taskExecutor;
 
-    private final SocketIOManager socketIOManager;
+    private final IOManager socketIOManager;
 
 
     public TaskCore() {
-        this.taskExecutor = new TaskExecutor();
         this.socketIOManager = new SocketIOManager();
+        this.taskExecutor = new TaskExecutor(socketIOManager);
     }
 
     @Override
@@ -35,6 +36,7 @@ public class TaskCore extends Thread {
 
             pollPhase();
             taskExecutor.process();
+
         }
     }
 
@@ -51,8 +53,6 @@ public class TaskCore extends Thread {
             taskExecutor.addRecords(records);
         }
     }
-
-
 
     public boolean isRunning() {
         return true;
