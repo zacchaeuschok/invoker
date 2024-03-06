@@ -55,7 +55,7 @@ public class TaskExecutor {
     private void doProcess() {
         // TODO: define UDF to process the record
         String currData = stateManager.read("default");
-        System.out.println("Do process" + record.value);
+        System.out.println("Do process " + record.value);
         int count = 0;
         if (!currData.isEmpty()) {
             try {

@@ -1,17 +1,11 @@
 package runtime.taskcore;
 
-import org.apache.kafka.clients.consumer.*;
-import org.apache.kafka.common.serialization.ByteArrayDeserializer;
-import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.errors.TaskMigratedException;
 import runtime.taskcore.api.IOManager;
 
 import java.io.*;
-import java.net.HttpURLConnection;
 import java.net.Socket;
-import java.net.URL;
 import java.nio.ByteBuffer;
-import java.security.Key;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -19,17 +13,19 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class SocketIOManager implements IOManager {
 
-    private Socket socket;
+    private Socket inputSocket;
+    private Socket outputSocket;
+
 
     private String hostname = "localhost";
-    private int port = 50001;
+    private int inputPort = 50001;
     private InputStream in;
-    private String topic = "test";
+    private OutputStream out;
     private final int maxRetries = 5;
 
     private final long waitTimeInMillis = 10000;
 
-    private String producerURL = "http://localhost:50002/data";
+    private int outputPort = 50002;
 
     private final Queue<KeyValuePair> messageQueue = new ConcurrentLinkedQueue<>();
     private Thread readerThread;
@@ -37,8 +33,9 @@ public class SocketIOManager implements IOManager {
     private boolean reconnecting = false;
 
     public SocketIOManager() {
-        connect();
+        connectInput();
         startReadingThread();
+        connectOutput();
     }
 
     private void startReadingThread() {
@@ -53,7 +50,7 @@ public class SocketIOManager implements IOManager {
                     }
                     if (reconnecting) {
                         System.out.println("Reconnecting");
-                        connect();
+                        connectInput();
                         continue;
                     }
                     // Read the length of the next piece of data
@@ -86,12 +83,35 @@ public class SocketIOManager implements IOManager {
         readerThread.start();
     }
 
-    public void connect() {
+    public void connectInput() {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                this.socket = new Socket(hostname, port);
-                this.in = socket.getInputStream();
-                System.out.println("Connection established");
+                this.inputSocket = new Socket(hostname, inputPort);
+                this.in = inputSocket.getInputStream();
+                System.out.println("Input Connection established");
+                reconnecting = false;
+                break;
+            } catch (IOException e) {
+                System.out.println(e);
+                if (attempt < maxRetries) {
+                    try {
+                        Thread.sleep(waitTimeInMillis);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        System.out.println("Thread interrupted: " + ie);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    public void connectOutput() {
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                this.outputSocket = new Socket(hostname, outputPort);
+                this.out = outputSocket.getOutputStream();
+                System.out.println("Output Connection established");
                 reconnecting = false;
                 break;
             } catch (IOException e) {
@@ -134,40 +154,31 @@ public class SocketIOManager implements IOManager {
     @Override
     public void send(KeyValuePair data) {
         try {
-            URL url = new URL(producerURL + "?key=" + data.key);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
+            byte[] key = data.key.getBytes("UTF-8");
 
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            connection.setDoOutput(true); // Enable sending a request body
-
-            // Sending request data
-            try (OutputStream os = connection.getOutputStream()) {
-                byte[] input = data.value.getBytes("utf-8");
-                os.write(input, 0, input.length);
+            out.write(intToBytes(key.length)); // Send the length of the key
+            if (key.length != 0) {
+                out.write(key);
             }
-
-            int responseCode = connection.getResponseCode();
-            System.out.println("Response Code: " + responseCode);
-
-            try (InputStream stream = connection.getInputStream();
-                 InputStreamReader inputStreamReader = new InputStreamReader(stream);
-                 BufferedReader reader = new BufferedReader(inputStreamReader)) {
-
-                String line;
-                StringBuilder response = new StringBuilder();
-
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-
-                System.out.println(response.toString());
+            System.out.println("sent key: " + data.key);
+            byte[] value = data.value.getBytes("UTF-8");
+            out.write(intToBytes(value.length)); // Send the length of the value
+            if (value.length != 0) {
+                out.write(value);
             }
+            System.out.println("sent val: " + data.value);
 
-            connection.disconnect();
+            out.flush();
         } catch (Exception e) {
-            System.out.println(e);
+            e.printStackTrace();
         }
+
+    }
+
+    private byte[] intToBytes(int i) {
+        ByteBuffer bb = ByteBuffer.allocate(4);
+        bb.putInt(i);
+        return bb.array();
     }
 
 

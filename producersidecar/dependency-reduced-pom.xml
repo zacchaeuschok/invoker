@@ -22,7 +22,7 @@
               <transformers>
                 <transformer />
                 <transformer>
-                  <mainClass>server.HTTPServer</mainClass>
+                  <mainClass>server.SocketServer</mainClass>
                 </transformer>
               </transformers>
             </configuration>
