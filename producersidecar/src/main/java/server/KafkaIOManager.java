@@ -14,9 +14,11 @@ import org.apache.kafka.streams.errors.TaskMigratedException;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 
 public class KafkaIOManager {
+
 
     private final Producer<String, String> mainProducer;
     private String topic = "output";
@@ -34,11 +36,13 @@ public class KafkaIOManager {
     }
 
     public KafkaIOManager() {
+        Map<String, String> configMapValues = ConfigMapReader.readAndParseConfigMap("/etc/config/main");
+        String kafkaTopic = configMapValues.get("output.topic");
+        String kafkaBroker = configMapValues.get("kafka.broker");
         final Properties props = new Properties();
-        String kafkaBroker = System.getenv("KAFKA_BROKER");
-        String kafkaTopic = System.getenv("INPUT_TOPIC");
+
         if (kafkaBroker == null || kafkaBroker.isEmpty()) {
-            kafkaBroker = "host.docker.internal:9092";
+            kafkaBroker = "localhost:9092";
         }
         if (kafkaTopic != null && !kafkaTopic.isEmpty()) {
             topic = kafkaTopic;

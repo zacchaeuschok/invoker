@@ -8,6 +8,8 @@ import runtime.taskcore.api.SimpleStateManager;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TaskExecutor {
     private final Logger log = LoggerFactory.getLogger(TaskExecutor.class);
@@ -54,26 +56,35 @@ public class TaskExecutor {
 
     private void doProcess() {
         // TODO: define UDF to process the record
-        String currData = stateManager.read("default");
+        try {
+            sum();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void wordCount() {
+        System.out.println("Do process " + record.value);
+        Map<String, Integer> wordCount = new HashMap<>();
+        String[] words = record.value.split(" ");
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                wordCount.put(word, wordCount.getOrDefault(word, 0) + 1);
+            }
+        }
+        wordCount.forEach((k, v) -> this.ioManager.send(new KeyValuePair(k, v.toString())));
+    }
+
+    private void sum() {
+        String currData = stateManager.read(record.key);
         System.out.println("Do process " + record.value);
         int count = 0;
         if (!currData.isEmpty()) {
-            try {
-                count = Integer.parseInt(currData);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            count = Integer.parseInt(currData);
         }
-
-        count += record.value.split(" ").length;
-        String newData = "" + count;
-        stateManager.write("default", newData);
-        stateCache = newData;
-
-        if (record != null) {
-            System.out.println(record.value);
-        }
-        this.ioManager.send(new KeyValuePair("default", stateCache));
+        count += Integer.parseInt(record.value);
+        stateManager.write(record.key, "" + count);
+        this.ioManager.send(new KeyValuePair(record.key, "" + count));
     }
 
 

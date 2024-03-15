@@ -47,13 +47,12 @@ Kind exposes localhost of your machine same way as docker: using `host.docker.in
 mvn package
 # Ensure that each module has a target folder with 1.0-SNAPSHOT.jar
 
-docker build ./executor -t executor:testv1
+docker build ./executor -t executor-word-count:testv1
 docker build ./iosidecar -t iosidecar:testv1
 docker build ./statesidecar -t statesidecar:testv1
 docker build ./producersidecar -t producersidecar:testv1
 
-kind load docker-image executor:testv1 iosidecar:testv1 statesidecar:testv1 producersidecar:testv1
-```
+kind load docker-image executor-word-count:testv1 executor-sum:testv1 iosidecar:testv1 statesidecar:testv1 producersidecar:testv1```
 
 ## Running pod on cluster
 

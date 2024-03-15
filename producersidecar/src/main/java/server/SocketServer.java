@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SocketServer {
     private ServerSocket serverSocket;
@@ -12,9 +14,9 @@ public class SocketServer {
     private KafkaIOManager ioManager;
     private Thread readerThread;
 
-
     private static final int MAX_RETRIES = 10;
     private static final long RETRY_DELAY_MS = 1000;
+    private SharedStatus configStatus = new SharedStatus();
 
     public static void main(String[] args) {
         SocketServer server = new SocketServer();
@@ -66,12 +68,19 @@ public class SocketServer {
                     System.out.println("Received key: " + keyStr);
                     String valueStr = new String(value, "UTF-8");
                     System.out.println("Received value: " + valueStr);
+                    if (configStatus.changed) {
+                        ioManager = new KafkaIOManager();
+                        configStatus.changed = false;
+                    }
                     ioManager.send(keyStr, valueStr);
                 }
             } catch (IOException e) {
                 System.out.println("Error reading from socket: " + e);
             }
         });
+        FileWatcher watcher = new FileWatcher("/etc/config", configStatus);
+        Thread t1 =new Thread(watcher);
+        t1.start();
         readerThread.start();
     }
 
@@ -79,5 +88,7 @@ public class SocketServer {
         ByteBuffer bb = ByteBuffer.wrap(bytes);
         return bb.getInt();
     }
+
+
 }
 

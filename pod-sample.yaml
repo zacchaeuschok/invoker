@@ -9,14 +9,20 @@ spec:
     - name: executor-pod
       image: "executor:testv1"
       imagePullPolicy: "IfNotPresent"
+      volumeMounts:
+        - name: config-volume
+          mountPath: /etc/config
   initContainers:
     - name: input-sidecar
       image: "iosidecar:testv1"
-      env:
-        - name: KAFKA_BROKER
-          value: "host.docker.internal:9092"
       imagePullPolicy: "IfNotPresent"
       restartPolicy: Always
+      env:
+        - name: POD_NAME
+          value: "example-0"
+      volumeMounts:
+        - name: config-volume
+          mountPath: /etc/config
     - name: state-sidecar
       image: "statesidecar:testv1"
       imagePullPolicy: "IfNotPresent"
@@ -26,5 +32,12 @@ spec:
       imagePullPolicy: "IfNotPresent"
       restartPolicy: Always
       env:
-        - name: KAFKA_BROKER
-          value: "host.docker.internal:9092"
+        - name: POD_NAME
+          value: "example-0"
+      volumeMounts:
+        - name: config-volume
+          mountPath: /etc/config
+  volumes:
+    - name: config-volume
+      configMap:
+        name: my-configmap

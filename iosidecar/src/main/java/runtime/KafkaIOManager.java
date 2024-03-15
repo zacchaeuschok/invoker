@@ -2,18 +2,19 @@ package runtime;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.streams.errors.TaskMigratedException;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Properties;
+import java.util.*;
 
 public class KafkaIOManager implements IOManager {
 
@@ -34,10 +35,13 @@ public class KafkaIOManager implements IOManager {
 
     public KafkaIOManager() {
         final Properties props = new Properties();
-        String kafkaBroker = System.getenv("KAFKA_BROKER");
-        String kafkaTopic = System.getenv("INPUT_TOPIC");
+        String configBasePath = "/etc/config/";
+        Map<String, String> configMapValues = ConfigMapReader.readAndParseConfigMap(configBasePath + "main");
+        String kafkaTopic = configMapValues.get("input.topic");
+        String kafkaBroker = configMapValues.get("kafka.broker");
+        String podName = System.getenv("POD_NAME");
         if (kafkaBroker == null || kafkaBroker.isEmpty()) {
-            kafkaBroker = "host.docker.internal:9092";
+            kafkaBroker = "localhost:9092";
         }
         if (kafkaTopic != null && !kafkaTopic.isEmpty()) {
             topic = kafkaTopic;
@@ -50,8 +54,21 @@ public class KafkaIOManager implements IOManager {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "group");
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         this.mainConsumer = new KafkaConsumer<>(props);
+        String partitionConfigPath = configBasePath + podName + ".partitions";
+        List<String> assignedPartitions = ConfigMapReader.readAndParseList(partitionConfigPath);
+        List<TopicPartition> assignedTPs = new ArrayList<>();
+        for (String partition: assignedPartitions) {
+            TopicPartition tp = new TopicPartition(topic, Integer.parseInt(partition));
+            assignedTPs.add(tp);
+        }
+        if (assignedTPs.isEmpty()) {
+            subscribeConsumer();
+        } else {
+            this.mainConsumer.assign(assignedTPs);
+        }
+        System.out.println("set up kafka io for topic " + topic);
     }
 
     /**

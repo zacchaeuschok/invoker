@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: example
+spec:
+  serviceName: "example"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: example
+  template:
+    metadata:
+      labels:
+        app: example
+    spec:
+      containers:
+        - name: executor-pod
+          image: "executor:testv1"
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config
+      initContainers:
+        - name: input-sidecar
+          image: "iosidecar:testv1"
+          imagePullPolicy: "IfNotPresent"
+          restartPolicy: Always
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config
+        - name: state-sidecar
+          image: "statesidecar:testv1"
+          imagePullPolicy: "IfNotPresent"
+          restartPolicy: Always
+        - name: producer-sidecar
+          image: "producersidecar:testv1"
+          imagePullPolicy: "IfNotPresent"
+          restartPolicy: Always
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: my-configmap

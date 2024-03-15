@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-configmap
+data:
+  main: |
+    kafka.broker=host.docker.internal:9092
+    input.topic=test
+    output.topic=output
+  example-0.partitions: "0"
+  example-1.partitions: "1"

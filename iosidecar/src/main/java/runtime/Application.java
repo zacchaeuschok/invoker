@@ -13,18 +13,21 @@ public class Application extends Thread {
 
     private final SocketServer socket;
 
-    private final runtime.KafkaIOManager kafkaIoManager;
+    private runtime.KafkaIOManager kafkaIoManager;
+
+    private SharedStatus configStatus;
 
 
-    public Application() {
+    public Application(SharedStatus configStatus) {
         this.socket = new SocketServer();
         this.kafkaIoManager = new KafkaIOManager();
+        this.configStatus = configStatus;
     }
 
     @Override
     public void run() {
         log.info("Starting");
-        kafkaIoManager.subscribeConsumer();
+        //kafkaIoManager.subscribeConsumer();
         socket.start(50001);
 
         while(isRunning()) {
@@ -34,6 +37,10 @@ public class Application extends Thread {
 
     void runOnce() {
         if (isRunning()) {
+            if (configStatus.changed) {
+                kafkaIoManager = new KafkaIOManager();
+                configStatus.changed = false;
+            }
             pollPhase();
         }
     }
@@ -56,8 +63,12 @@ public class Application extends Thread {
     }
 
     public static void main(String[] args) {
-        Application app = new Application();
+        SharedStatus changedConfig = new SharedStatus();
+        Application app = new Application(changedConfig);
+        FileWatcher watcher = new FileWatcher("/etc/config", changedConfig);
         Thread t1 =new Thread(app);
+        Thread t2 = new Thread(watcher);
         t1.start();
+        t2.start();
     }
 }

@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 public class SocketServer {
     private ServerSocket serverSocket;
@@ -44,14 +45,15 @@ public class SocketServer {
                     if (key != null) {
                         out.write(intToBytes(key.length)); // Send the length of the value
                         out.write(key); // Send the value itself
+                        System.out.println("sent key " + new String(key, StandardCharsets.UTF_8));
                     } else {
                         out.write(intToBytes(0));
                     }
-                    System.out.println("sent key");
                     byte[] value = record.value();
                     if (value != null) {
                         out.write(intToBytes(value.length)); // Send the length of the value
                         out.write(value); // Send the value itself
+                        System.out.println("sent value " + new String(value, StandardCharsets.UTF_8));
                     }
                     out.flush();
                 }
