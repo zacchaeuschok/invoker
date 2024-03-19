@@ -8,4 +8,3 @@ data:
     input.topic=test
     output.topic=output
   example-0.partitions: "0"
-  example-1.partitions: "1"

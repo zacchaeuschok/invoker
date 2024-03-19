@@ -15,16 +15,14 @@ spec:
     spec:
       containers:
         - name: executor-pod
-          image: "executor:testv1"
+          image: "ruohang/executor-word-count:testv1"
           imagePullPolicy: "IfNotPresent"
           volumeMounts:
             - name: config-volume
               mountPath: /etc/config
-      initContainers:
         - name: input-sidecar
-          image: "iosidecar:testv1"
+          image: "ruohang/iosidecar:testv1"
           imagePullPolicy: "IfNotPresent"
-          restartPolicy: Always
           env:
             - name: POD_NAME
               valueFrom:
@@ -34,13 +32,11 @@ spec:
             - name: config-volume
               mountPath: /etc/config
         - name: state-sidecar
-          image: "statesidecar:testv1"
+          image: "ruohang/statesidecar:testv1"
           imagePullPolicy: "IfNotPresent"
-          restartPolicy: Always
         - name: producer-sidecar
-          image: "producersidecar:testv1"
+          image: "ruohang/producersidecar:testv1"
           imagePullPolicy: "IfNotPresent"
-          restartPolicy: Always
           env:
             - name: POD_NAME
               valueFrom:

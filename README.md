@@ -3,23 +3,34 @@
 ## Dependencies
 
 ### Kafka
-1. Setup Local cluster: Follow till step 2 of [Quickstart Guide](https://kafka.apache.org/quickstart). Zookeeper mode is fine.
-
-2. Create input and output topic: Default input topic is "test". Default output topic is "output". Can be set in sidecar ENV as `INPUT_TOPIC`. 
+1. Get Kafka. Step 1 of [Quickstart Guide](https://kafka.apache.org/quickstart).
+2. Start Zookeeper
+```shell
+bin/zookeeper-server-start.sh config/zookeeper.properties
+```
+3. Change `config/server.properties` field `advertised.listeners` to your network public ip
+```el
+advertised.listeners=PLAINTEXT://YOUR_PUBLIC_IP:9092
+```
+4. Start Kafka Broker
+```shell
+bin/kafka-server-start.sh config/server.properties
+```
+5. Create input and output topic: Default input topic is "test". Default output topic is "output". Can be set in sidecar ENV as `INPUT_TOPIC`. 
 ```shell
 bin/kafka-topics.sh --create --topic test --bootstrap-server localhost:9092
 bin/kafka-topics.sh --create --topic output --bootstrap-server localhost:9092
 ```
 
-3. Create cli producer for input topic
+6. Create cli producer for input topic
 ```shell
 bin/kafka-console-producer.sh --topic test --bootstrap-server localhost:9092
 # add flags --property "parse.key=true" --property "key.separator=:" to send key with key:value
 ```
 
-4. Create consumer for output topic
+7. Create consumer for output topic
 ```shell
-./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic output
+bin/kafka-console-consumer.sh --bootstrap-server localhost:9092  --topic output  --formatter kafka.tools.DefaultMessageFormatter --property print.key=true  --property print.value=true
 ```
 ### Docker
 
@@ -40,23 +51,47 @@ kubectl version
 # Should see: Server Version: v1.29.2
 ```
 
-## Building the application (Kind)
+### Creating Local Kubernetes cluster (Microk8s)
+Follow the microk8s guide. No need to enable anything.
+https://microk8s.io/#install-microk8s
 
-Kind exposes localhost of your machine same way as docker: using `host.docker.internal`. In Minikube, you have to locate the IP of your host machine by using `host.minikube.internal` or finding the host ip with `ifconfig`.
+### Creating Local Kubernetes cluster (Minikube)
+Follow the minikube guide.
+https://minikube.sigs.k8s.io/docs/start/
+
+
+## Running the application
+
+### Finding the localhost ip for Kafka broker
+To connect the kubernetes pod to Kafka, the `kafka.broker` address in the config.yaml must be setup correctly.
+This section details what you need to do if your Kafka broker is running on `localhost:9092`.
+If Kafka is already setup in another IP reachable from the K8S cluster, replacing `kafka.broker` value will be enough.
+
+Kind exposes localhost of your machine same way as docker: using `host.docker.internal`.
+
+In Minikube and Microk8s the process is more complicated.
+#### On MacOS
+Use ifconfig to find the localhost ip for your host machine.
 ```shell
-mvn package
-# Ensure that each module has a target folder with 1.0-SNAPSHOT.jar
+ifconfig
+```
+Under `en0`, the ipv4 address next to the `inet` row should be usable.
+#### On Linux
+//TODO
+#### On Windows
+//TODO
 
-docker build ./executor -t executor-word-count:testv1
-docker build ./iosidecar -t iosidecar:testv1
-docker build ./statesidecar -t statesidecar:testv1
-docker build ./producersidecar -t producersidecar:testv1
+After finding the IP, replace the value field of `kafka.broker`. 
 
-kind load docker-image executor-word-count:testv1 executor-sum:testv1 iosidecar:testv1 statesidecar:testv1 producersidecar:testv1```
+### Running the pod
+
+```shell
+## Running config on cluster
+
+kubectl apply -f configmap.yaml
 
 ## Running pod on cluster
 
-```shell
 kubectl apply -f pod-sample.yaml
 
 # To monitor status:
@@ -66,6 +101,9 @@ kubectl get pods
 # You can check the System.out.println() for sidecars this way 
 # Remove the -c flag to just see the main container
 kubectl logs pod/executor -c ${CONTAINER} 
+# To check if the input sidecar is setup correctly and the kafka broker is reachable.
+kubectl logs pod/executor -c input-sidecar
+# If everything is setup correctly main container logs should say Connection Established
 ```
 
-Afterwards, you should see output in your consumer after writing messages in the producer. Note: When restarting consumer, consumer group rebalancing may take a bit, best to check via the balancing messages shown by the broker.
+Afterwards, you should see output in your consumer after writing messages in the producer. Note: When restarting consumer, consumer group rebalancing may take a second, best to check via the balancing messages shown by the broker.
