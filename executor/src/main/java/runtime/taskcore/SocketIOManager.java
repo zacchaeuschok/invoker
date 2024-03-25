@@ -1,7 +1,15 @@
 package runtime.taskcore;
 
-import org.apache.kafka.streams.errors.TaskMigratedException;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import runtime.taskcore.api.IOManager;
+import runtime.taskcore.netty.KeyValueProcessingHandler;
+import runtime.taskcore.netty.LengthFieldBasedDecoder;
+import runtime.taskcore.netty.ReconnectHandler;
 
 import java.io.*;
 import java.net.Socket;
@@ -28,81 +36,29 @@ public class SocketIOManager implements IOManager {
     private int outputPort = 50002;
 
     private final Queue<KeyValuePair> messageQueue = new ConcurrentLinkedQueue<>();
-    private Thread readerThread;
 
     private boolean reconnecting = false;
 
     public SocketIOManager() {
         connectInput();
-        startReadingThread();
         connectOutput();
     }
 
-    private void startReadingThread() {
-        readerThread = new Thread(() -> {
-            try {
-                byte[] lengthBytes = new byte[4]; // length of the message is provided in the first 4 bytes
-                while (!Thread.currentThread().isInterrupted()) {
-                    System.out.println("Looping read");
-                    if (in.read(lengthBytes) == -1) {
-                        reconnecting = true;
-                        // End of stream reached or socket closed
-                    }
-                    if (reconnecting) {
-                        System.out.println("Reconnecting");
-                        connectInput();
-                        continue;
-                    }
-                    // Read the length of the next piece of data
-                    int keyLength = bytesToInt(lengthBytes);
-                    byte[] key = new byte[keyLength];
-                    int keyRead = 0, keyTotalRead = 0;
-                    while(keyTotalRead < keyLength && (keyRead = in.read(key, keyTotalRead, keyLength - keyTotalRead)) != -1) {
-                        keyTotalRead += keyRead;
-                    }
-
-                    //Read Value
-                    in.read(lengthBytes);
-                    int valueLength = bytesToInt(lengthBytes);
-                    byte[] value = new byte[valueLength];
-                    int valueRead = 0, valueTotalRead = 0;
-                    while(valueTotalRead < valueLength && (valueRead = in.read(value, valueTotalRead, valueLength - valueTotalRead)) != -1) {
-                        valueTotalRead += valueRead;
-                    }
-
-                    String keyStr = new String(key, "UTF-8");
-                    System.out.println("Received key: " + keyStr);
-                    String valueStr = new String(value, "UTF-8");
-                    System.out.println("Received value: " + valueStr);
-                    messageQueue.offer(new KeyValuePair(keyStr, valueStr));
-                }
-            } catch (IOException e) {
-                System.out.println("Error reading from socket: " + e);
-            }
-        });
-        readerThread.start();
-    }
-
     public void connectInput() {
-        for (int attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                this.inputSocket = new Socket(hostname, inputPort);
-                this.in = inputSocket.getInputStream();
-                System.out.println("Input Connection established");
-                reconnecting = false;
-                break;
-            } catch (IOException e) {
-                System.out.println(e);
-                if (attempt < maxRetries) {
-                    try {
-                        Thread.sleep(waitTimeInMillis);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        System.out.println("Thread interrupted: " + ie);
-                        break;
-                    }
-                }
-            }
+        try {
+            Bootstrap b = new Bootstrap();
+            b.group(new NioEventLoopGroup())
+                    .channel(NioSocketChannel.class)
+                    .handler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel ch) {
+                            ch.pipeline().addLast(new LengthFieldBasedDecoder(), new KeyValueProcessingHandler(messageQueue));
+                            ch.pipeline().addLast(new ReconnectHandler(b));
+                        }
+                    });
+            b.connect("localhost", 50001).sync();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -134,7 +90,6 @@ public class SocketIOManager implements IOManager {
      *
      * @param pollTime how long to block in Consumer#poll
      * @return Next batch of records or null if no records available.
-     * @throws TaskMigratedException if the task producer got fenced (EOS only)
      */
     @Override
     public List<KeyValuePair> pollRequests(final Duration pollTime) {

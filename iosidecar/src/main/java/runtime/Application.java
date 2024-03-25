@@ -1,5 +1,10 @@
 package runtime;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,24 +16,27 @@ import runtime.KafkaIOManager;
 public class Application extends Thread {
     private static final Logger log = LoggerFactory.getLogger(runtime.Application.class);
 
-    private final SocketServer socket;
+    private final KafkaPollNettyServer socket;
 
     private runtime.KafkaIOManager kafkaIoManager;
 
     private SharedStatus configStatus;
 
+    private ChannelGroup allClients;
+
 
     public Application(SharedStatus configStatus) {
-        this.socket = new SocketServer();
         this.kafkaIoManager = new KafkaIOManager();
         this.configStatus = configStatus;
+        this.allClients = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+        this.socket = new KafkaPollNettyServer(50001, this.allClients);
     }
 
     @Override
     public void run() {
-        log.info("Starting");
+        System.out.println("Starting");
         //kafkaIoManager.subscribeConsumer();
-        socket.start(50001);
+        socket.start();
 
         while(isRunning()) {
             runOnce();
@@ -52,7 +60,21 @@ public class Application extends Thread {
         records = kafkaIoManager.pollRequests(Duration.ZERO);
 
         if (!records.isEmpty()) {
-            socket.sendRecords(records);
+            System.out.println("Received records");
+            records.forEach(record -> {
+                byte[] key = record.key();
+                byte[] value = record.value();
+
+                if (key != null && value != null) {
+                    ByteBuf encodedMsg = Unpooled.buffer();
+                    encodedMsg.writeInt(key.length);
+                    encodedMsg.writeBytes(key);
+                    encodedMsg.writeInt(value.length);
+                    encodedMsg.writeBytes(value);
+                    allClients.write(encodedMsg);
+                }
+            });
+            allClients.flush();
         }
     }
 

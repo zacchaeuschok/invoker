@@ -11,7 +11,6 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.streams.errors.TaskMigratedException;
 
 import java.time.Duration;
 import java.util.*;
@@ -76,7 +75,6 @@ public class KafkaIOManager implements IOManager {
      *
      * @param pollTime how long to block in Consumer#poll
      * @return Next batch of records or null if no records available.
-     * @throws TaskMigratedException if the task producer got fenced (EOS only)
      */
     @Override
     public ConsumerRecords<byte[], byte[]> pollRequests(final Duration pollTime) {
