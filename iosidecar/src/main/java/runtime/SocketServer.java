@@ -1,25 +1,36 @@
 package runtime;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.newsclub.net.unix.AFUNIXServerSocket;
+import org.newsclub.net.unix.AFUNIXSocketAddress;
+import org.newsclub.net.unix.AFUNIXSocket;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
 
 public class SocketServer {
-    private ServerSocket serverSocket;
-    private Socket clientSocket;
+    private InputStream in;
     private OutputStream out;
+    private AFUNIXServerSocket serverSocket;
+    private AFUNIXSocket clientSocket;
 
     private static final int MAX_RETRIES = 10;
     private static final long RETRY_DELAY_MS = 1000;
+    private static final File SOCKET_FILE = new File("/tmp/myapp.socket");
 
-    public void start(int port) {
+    public void start() {
         try {
-            serverSocket = new ServerSocket(port);
+            if (SOCKET_FILE.exists()) {
+                SOCKET_FILE.delete();
+            }
+            serverSocket = AFUNIXServerSocket.newInstance();
+            serverSocket.bind(new AFUNIXSocketAddress(SOCKET_FILE));
             acceptClient();
         } catch (IOException e) {
             e.printStackTrace();
@@ -31,6 +42,7 @@ public class SocketServer {
         clientSocket = serverSocket.accept(); // Accepts connection from the main container
         System.out.println("Socket client accepted.");
         out = clientSocket.getOutputStream();
+        in = clientSocket.getInputStream();
     }
 
 
@@ -83,6 +95,8 @@ public class SocketServer {
         }
     }
 
+
+
     private void reconnect() throws IOException {
         // Close existing connections
         if (out != null) out.close();
@@ -94,6 +108,10 @@ public class SocketServer {
         ByteBuffer bb = ByteBuffer.allocate(4);
         bb.putInt(i);
         return bb.array();
+    }
+
+    public InputStream getIn() {
+        return this.in;
     }
 
     public void stop() {

@@ -1,25 +1,19 @@
 package runtime.taskcore.api;
 
 import runtime.taskcore.StateManager;
-import sun.net.www.http.HttpClient;
+import org.newsclub.net.unix.AFUNIXSocket;
+import org.newsclub.net.unix.AFUNIXSocketAddress;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.Socket;
-import java.net.URL;
 
 public class SimpleStateManager implements StateManager {
-    private String urlString = "http://localhost:50000/data";
-    private HttpURLConnection connection;
-
-    private Socket socket;
+    private AFUNIXSocket socket;
 
     private PrintWriter writer;
-    private String hostname = "localhost";
-    private int port = 50000;
+    private static final File SOCKET_FILE = new File("/tmp/storage.socket");
+
     private InputStream in;
     private OutputStream out;
-    private boolean reconnecting = false;
     private final int maxRetries = 5;
 
     private final long waitTimeInMillis = 10000;
@@ -31,12 +25,12 @@ public class SimpleStateManager implements StateManager {
     public void connect() {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                this.socket = new Socket(hostname, port);
+                this.socket = AFUNIXSocket.newInstance();
+                this.socket.connect(new AFUNIXSocketAddress(SOCKET_FILE));
                 this.out = socket.getOutputStream();
                 this.in = socket.getInputStream();
                 this.writer = new PrintWriter(this.out, true);
                 System.out.println("State Connection established");
-                reconnecting = false;
                 break;
             } catch (IOException e) {
                 System.out.println(e);
@@ -62,6 +56,7 @@ public class SimpleStateManager implements StateManager {
             String response = reader.readLine();
             System.out.println(response);
         } catch (Exception e) {
+            connect();
             System.out.println(e);
         }
     }
@@ -78,6 +73,7 @@ public class SimpleStateManager implements StateManager {
                 data = response.substring(4);
             }
         } catch (Exception e) {
+            connect();
             e.printStackTrace();
         }
         return data;

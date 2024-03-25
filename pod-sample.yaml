@@ -7,13 +7,15 @@ metadata:
 spec:
   containers:
     - name: executor-pod
-      image: "ruohang/executor-word-count:testv1"
+      image: "ruohang/executor-sum:testv1.1"
       imagePullPolicy: "IfNotPresent"
       volumeMounts:
         - name: config-volume
           mountPath: /etc/config
-    - name: input-sidecar
-      image: "ruohang/iosidecar:testv1"
+        - name: uds-volume
+          mountPath: /tmp
+    - name: io-sidecar
+      image: "ruohang/iosidecar:testv1.1"
       imagePullPolicy: "IfNotPresent"
       env:
         - name: POD_NAME
@@ -21,19 +23,17 @@ spec:
       volumeMounts:
         - name: config-volume
           mountPath: /etc/config
+        - name: uds-volume
+          mountPath: /tmp
     - name: state-sidecar
-      image: "ruohang/statesidecar:testv1"
+      image: "ruohang/statesidecar:testv1.1"
       imagePullPolicy: "IfNotPresent"
-    - name: producer-sidecar
-      image: "ruohang/producersidecar:testv1"
-      imagePullPolicy: "IfNotPresent"
-      env:
-        - name: POD_NAME
-          value: "example-0"
       volumeMounts:
-        - name: config-volume
-          mountPath: /etc/config
+        - name: uds-volume
+          mountPath: /tmp
   volumes:
     - name: config-volume
       configMap:
         name: my-configmap
+    - name: uds-volume
+      emptyDir: { }

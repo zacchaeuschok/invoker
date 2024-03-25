@@ -1,6 +1,5 @@
 package runtime.taskcore;
 
-import org.apache.kafka.streams.errors.TaskMigratedException;
 import runtime.taskcore.api.IOManager;
 
 import java.io.*;
@@ -9,14 +8,14 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import org.newsclub.net.unix.AFUNIXSocket;
+import org.newsclub.net.unix.AFUNIXSocketAddress;
 
 
 public class SocketIOManager implements IOManager {
 
-    private Socket inputSocket;
-    private Socket outputSocket;
-
-
+    private AFUNIXSocket ioSocket;
+    private static final File SOCKET_FILE = new File("/tmp/myapp.socket");
     private String hostname = "localhost";
     private int inputPort = 50001;
     private InputStream in;
@@ -33,9 +32,13 @@ public class SocketIOManager implements IOManager {
     private boolean reconnecting = false;
 
     public SocketIOManager() {
-        connectInput();
+        try {
+            this.ioSocket = AFUNIXSocket.newInstance();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        connectSocket();
         startReadingThread();
-        connectOutput();
     }
 
     private void startReadingThread() {
@@ -50,7 +53,7 @@ public class SocketIOManager implements IOManager {
                     }
                     if (reconnecting) {
                         System.out.println("Reconnecting");
-                        connectInput();
+                        connectSocket();
                         continue;
                     }
                     // Read the length of the next piece of data
@@ -83,35 +86,13 @@ public class SocketIOManager implements IOManager {
         readerThread.start();
     }
 
-    public void connectInput() {
+    public void connectSocket() {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                this.inputSocket = new Socket(hostname, inputPort);
-                this.in = inputSocket.getInputStream();
-                System.out.println("Input Connection established");
-                reconnecting = false;
-                break;
-            } catch (IOException e) {
-                System.out.println(e);
-                if (attempt < maxRetries) {
-                    try {
-                        Thread.sleep(waitTimeInMillis);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        System.out.println("Thread interrupted: " + ie);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    public void connectOutput() {
-        for (int attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                this.outputSocket = new Socket(hostname, outputPort);
-                this.out = outputSocket.getOutputStream();
-                System.out.println("Output Connection established");
+                ioSocket.connect(new AFUNIXSocketAddress(SOCKET_FILE));
+                this.out = ioSocket.getOutputStream();
+                this.in = ioSocket.getInputStream();
+                System.out.println("I/O Connection established");
                 reconnecting = false;
                 break;
             } catch (IOException e) {
@@ -134,7 +115,6 @@ public class SocketIOManager implements IOManager {
      *
      * @param pollTime how long to block in Consumer#poll
      * @return Next batch of records or null if no records available.
-     * @throws TaskMigratedException if the task producer got fenced (EOS only)
      */
     @Override
     public List<KeyValuePair> pollRequests(final Duration pollTime) {

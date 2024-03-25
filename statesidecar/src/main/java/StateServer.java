@@ -3,19 +3,24 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.InvalidParameterException;
 import java.util.HashMap;
+import org.newsclub.net.unix.AFUNIXServerSocket;
+import org.newsclub.net.unix.AFUNIXSocketAddress;
+import org.newsclub.net.unix.AFUNIXSocket;
 
 public class StateServer {
 
     private static final HashMap<String, String> storage = new HashMap<>();
-    public static void main(String[] args) throws IOException {
-        int port = 50000;
-        storage.put("default", "");
-        System.out.println("Server started at http://localhost:" + port);
+    private static final File SOCKET_FILE = new File("/tmp/storage.socket");
 
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("Server is listening on port " + port);
+    public static void main(String[] args) throws IOException {
+        storage.put("default", "");
+        System.out.println("Server started at " + SOCKET_FILE.getPath());
+
+        try (AFUNIXServerSocket serverSocket = AFUNIXServerSocket.newInstance();) {
+            serverSocket.bind(new AFUNIXSocketAddress(SOCKET_FILE));
+            System.out.println("Server is listening on port " + SOCKET_FILE.getPath());
             while (true) {
-                try (Socket socket = serverSocket.accept()) {
+                try (AFUNIXSocket socket = serverSocket.accept()) {
                     System.out.println("New client connected");
 
                     InputStream input = socket.getInputStream();

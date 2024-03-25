@@ -12,7 +12,6 @@ public class SocketServer {
     private Socket clientSocket;
     private InputStream in;
     private KafkaIOManager ioManager;
-    private Thread readerThread;
 
     private static final int MAX_RETRIES = 10;
     private static final long RETRY_DELAY_MS = 1000;
@@ -42,7 +41,9 @@ public class SocketServer {
     }
 
     private void listen() {
-        readerThread = new Thread(() -> {
+        // length of the message is provided in the first 4 bytes
+        //Read Value
+        Thread readerThread = new Thread(() -> {
             try {
                 byte[] lengthBytes = new byte[4]; // length of the message is provided in the first 4 bytes
                 while (!Thread.currentThread().isInterrupted()) {
@@ -51,7 +52,7 @@ public class SocketServer {
                     int keyLength = bytesToInt(lengthBytes);
                     byte[] key = new byte[keyLength];
                     int keyRead = 0, keyTotalRead = 0;
-                    while(keyTotalRead < keyLength && (keyRead = in.read(key, keyTotalRead, keyLength - keyTotalRead)) != -1) {
+                    while (keyTotalRead < keyLength && (keyRead = in.read(key, keyTotalRead, keyLength - keyTotalRead)) != -1) {
                         keyTotalRead += keyRead;
                     }
 
@@ -60,7 +61,7 @@ public class SocketServer {
                     int valueLength = bytesToInt(lengthBytes);
                     byte[] value = new byte[valueLength];
                     int valueRead = 0, valueTotalRead = 0;
-                    while(valueTotalRead < valueLength && (valueRead = in.read(value, valueTotalRead, valueLength - valueTotalRead)) != -1) {
+                    while (valueTotalRead < valueLength && (valueRead = in.read(value, valueTotalRead, valueLength - valueTotalRead)) != -1) {
                         valueTotalRead += valueRead;
                     }
 

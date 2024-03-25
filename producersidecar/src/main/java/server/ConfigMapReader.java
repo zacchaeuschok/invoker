@@ -1,10 +1,14 @@
 package server;
 
+
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+
 
 public class ConfigMapReader {
 
@@ -22,8 +26,25 @@ public class ConfigMapReader {
                     }
                 }
             }
+        } catch (FileNotFoundException e) {
+            configValues.put("kafka.broker", "localhost:9092");
+            configValues.put("input.topic", "test");
+
         } catch (IOException e) {
             e.printStackTrace();
+        }
+        return configValues;
+    }
+
+    public static List<String> readAndParseList(String filePath) {
+        List<String> configValues = new ArrayList<>();
+        try {
+            String content = new String(Files.readAllBytes(Paths.get(filePath)));
+            configValues = Arrays.asList(content.split(","));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Partition file not found");
+            return configValues;
         }
         return configValues;
     }

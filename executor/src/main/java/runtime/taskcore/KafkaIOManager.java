@@ -3,14 +3,10 @@ package runtime.taskcore;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.errors.TaskMigratedException;
 import runtime.taskcore.api.IOManager;
 
 import java.time.Duration;
 import java.util.*;
-
-import static org.apache.kafka.streams.processor.internals.ClientUtils.getConsumerClientId;
 
 public class KafkaIOManager implements IOManager {
 
@@ -43,7 +39,6 @@ public class KafkaIOManager implements IOManager {
      *
      * @param pollTime how long to block in Consumer#poll
      * @return Next batch of records or null if no records available.
-     * @throws TaskMigratedException if the task producer got fenced (EOS only)
      */
     @Override
     public List<KeyValuePair> pollRequests(final Duration pollTime) {
