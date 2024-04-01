@@ -1,4 +1,15 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-configmap
+data:
+  main: |
+    kafka.broker=host.docker.internal:9092
+    input.topic=test
+    output.topic=output
+  sum.partitions: "0"
+---
+piVersion: v1
 kind: Pod
 metadata:
   name: executor
@@ -6,7 +17,7 @@ metadata:
     app: executor
 spec:
   containers:
-    - name: executor-pod
+    - name: sum
       image: "ruohang/executor-sum:testv1.1"
       imagePullPolicy: "IfNotPresent"
       volumeMounts:
@@ -19,7 +30,7 @@ spec:
       imagePullPolicy: "IfNotPresent"
       env:
         - name: POD_NAME
-          value: "example-0"
+          value: "sum"
       volumeMounts:
         - name: config-volume
           mountPath: /etc/config
