@@ -59,6 +59,12 @@ https://microk8s.io/#install-microk8s
 Follow the minikube guide.
 https://minikube.sigs.k8s.io/docs/start/
 
+## Building the application
+Building the docker application requires set up of Maven and docker. Afterwards, the docker image is abled to be pushed to dockerhub using the following script.
+The script may need to be modified to change the version or the repository.
+```shell
+./build-and-push.sh
+```
 
 ## Running the application
 
@@ -86,13 +92,8 @@ After finding the IP, replace the value field of `kafka.broker`.
 ### Running the pod
 
 ```shell
-## Running config on cluster
-
-kubectl apply -f configmap.yaml
-
-## Running pod on cluster
-
-kubectl apply -f pod-sample.yaml
+# Applying kubernetes configmap and pod
+kubectl apply -f sample.yaml
 
 # To monitor status:
 kubectl get pods
