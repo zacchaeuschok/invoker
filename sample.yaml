@@ -12,12 +12,12 @@ data:
 piVersion: v1
 kind: Pod
 metadata:
-  name: executor
+  name: sum
   labels:
     app: executor
 spec:
   containers:
-    - name: sum
+    - name: executor-pod
       image: "ruohang/executor-sum:testv1.1"
       imagePullPolicy: "Always"
       volumeMounts:
