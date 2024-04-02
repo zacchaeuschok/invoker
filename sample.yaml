@@ -19,7 +19,7 @@ spec:
   containers:
     - name: sum
       image: "ruohang/executor-sum:testv1.1"
-      imagePullPolicy: "IfNotPresent"
+      imagePullPolicy: "Always"
       volumeMounts:
         - name: config-volume
           mountPath: /etc/config
@@ -27,7 +27,7 @@ spec:
           mountPath: /tmp
     - name: io-sidecar
       image: "ruohang/iosidecar:testv1.1"
-      imagePullPolicy: "IfNotPresent"
+      imagePullPolicy: "Always"
       env:
         - name: POD_NAME
           value: "sum"
@@ -38,7 +38,7 @@ spec:
           mountPath: /tmp
     - name: state-sidecar
       image: "ruohang/statesidecar:testv1.1"
-      imagePullPolicy: "IfNotPresent"
+      imagePullPolicy: "Always"
       volumeMounts:
         - name: uds-volume
           mountPath: /tmp
