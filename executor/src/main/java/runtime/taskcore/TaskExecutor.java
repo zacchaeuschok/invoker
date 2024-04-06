@@ -57,7 +57,7 @@ public class TaskExecutor {
     private void doProcess() {
         // TODO: define UDF to process the record
         try {
-            wordCount();
+            sum();
         } catch (Exception e) {
             e.printStackTrace();
         }
