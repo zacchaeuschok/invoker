@@ -13,6 +13,7 @@
         <module>iosidecar</module>
         <module>statesidecar</module>
         <module>producersidecar</module>
+        <module>testproducer</module>
     </modules>
 
     <properties>

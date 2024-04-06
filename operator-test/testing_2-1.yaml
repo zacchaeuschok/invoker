@@ -22,7 +22,7 @@ spec:
       pods:
         - name: "word-count-0"
           partitions:
-            - "0,1,2"
+            - "0,1,2,3,4"
           resources:
             requests:
               cpu: "128m"
@@ -30,7 +30,7 @@ spec:
               cpu: "256m"
         - name: "word-count-1"
           partitions:
-            - "3,4,5"
+            - "5"
           resources:
             requests:
               cpu: "128m"

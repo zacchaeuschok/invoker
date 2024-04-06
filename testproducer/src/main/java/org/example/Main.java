@@ -4,11 +4,12 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-public class Alt {
-    public static volatile int frequency = 100;
+public class Main {
+    public static volatile int frequency = 300;
     public static volatile boolean run = true;
     public static void main(String[] args) throws InterruptedException {
         Properties props = new Properties();
@@ -20,14 +21,27 @@ public class Alt {
         Thread scaleThread = new Thread(() -> {
             try {
                 Runtime rt = Runtime.getRuntime();
+                rt.exec("kubectl apply -f operator-test/testing_1.yaml");
+                System.out.println("Applied testing_1");
+                Thread.sleep(3*60*1000);
+                frequency = 150;
                 rt.exec("kubectl apply -f operator-test/testing_2.yaml");
                 System.out.println("Applied testing_2");
-                Thread.sleep(6*60*1000);
-                rt.exec("kubectl apply -f operator-test/testing_2-1.yaml");
-                System.out.println("Applied testing_2-1");
-                Thread.sleep(6*60*1000);
-                rt.exec("kubectl delete -f operator-test/testing_2-1.yaml");
-                System.out.println("Deleting testing_2-1");
+                Thread.sleep(3*60*1000);
+                frequency = 100;
+                rt.exec("kubectl apply -f operator-test/testing_3.yaml");
+                System.out.println("Applied testing_3");
+                Thread.sleep(3*60*1000);
+                frequency = 150;
+                rt.exec("kubectl apply -f operator-test/testing_2.yaml");
+                System.out.println("Applied testing_2");
+                Thread.sleep(3*60*1000);
+                frequency = 300;
+                rt.exec("kubectl apply -f operator-test/testing_1.yaml");
+                System.out.println("Applied testing_1");
+                Thread.sleep(3*60*1000);
+                rt.exec("kubectl delete -f operator-test/testing_1.yaml");
+                System.out.println("Deleting testing_1");
                 run = false;
             } catch (Exception e) {
                 e.printStackTrace();
