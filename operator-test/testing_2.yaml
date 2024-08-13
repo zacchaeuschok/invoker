@@ -12,9 +12,9 @@ metadata:
 spec:
   imagePullPolicy: "IfNotPresent"
   statefulEntities:
-    - executorImage: "ruohang/executor-word-count:testv1.1"
-      ioImage: "ruohang/iosidecar:testv1.1"
-      stateImage: "ruohang/statesidecar:testv1.1"
+    - executorImage: "zacchaeus2000/executor-word-count:testv1.1"
+      ioImage: "zacchaeus2000/iosidecar:testv1.1"
+      stateImage: "zacchaeus2000/statesidecar:testv1.1"
       ioAddress: "host.docker.internal:9092"
       inputTopic: "input"
       outputTopic: "count"
@@ -36,9 +36,9 @@ spec:
               cpu: "128m"
             limits:
               cpu: "256m"
-    - executorImage: "ruohang/executor-sum:testv1.1"
-      ioImage: "ruohang/iosidecar:testv1.1"
-      stateImage: "ruohang/statesidecar:testv1.1"
+    - executorImage: "zacchaeus2000/executor-sum:testv1.1"
+      ioImage: "zacchaeus2000/iosidecar:testv1.1"
+      stateImage: "zacchaeus2000/statesidecar:testv1.1"
       ioAddress: "host.docker.internal:9092"
       inputTopic: "count"
       outputTopic: "output"
